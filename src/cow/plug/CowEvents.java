@@ -80,26 +80,23 @@ public class CowEvents implements Listener {
 		if(fraction.denom != 0){
 			double chance = fraction.numer/fraction.denom;
 			if(Math.random() < chance){
-				if(Math.random() < 0.5){
-						switch((int)Math.floor(Math.random()*5)){
-							case 0: child.setLootTable((LootTable) LootTables.ZOMBIE.getLootTable()); break;
-							case 1: child.setAgeLock(true); break;
-							case 2: child.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 1000000, 4)); break;
-							case 3: child.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 1000000, 0)); break;
-							case 4: child.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 1000000, 0)); break;
-						}
-				}else{
-					child.remove();
-					switch(child.getType()){
-						case PIG:
-							Creeper creeper = (Creeper) world.spawnEntity(location, EntityType.CREEPER);
-							creeper.ignite();
-							break;
-						default:
-							LivingEntity ravager = (LivingEntity) world.spawnEntity(location, EntityType.RAVAGER);
-							ravager.setCustomName(child.getType().toString());
-							break;
-					}
+				switch((int)Math.floor(Math.random()*5)){
+					case 0: child.setLootTable((LootTable) LootTables.ZOMBIE.getLootTable()); break;
+					case 1: child.setAgeLock(true); break;
+					case 2: child.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 1000000, 4)); break;
+					case 3: child.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 1000000, 0)); break;
+					case 4: child.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 1000000, 0)); break;
+				}
+				child.remove();
+				switch(child.getType()){
+					case PIG:
+						Creeper creeper = (Creeper) world.spawnEntity(location, EntityType.CREEPER);
+						creeper.ignite();
+						break;
+					default:
+						LivingEntity ravager = (LivingEntity) world.spawnEntity(location, EntityType.RAVAGER);
+						ravager.setCustomName(child.getType().toString());
+						break;
 				}
 			}
 		}
