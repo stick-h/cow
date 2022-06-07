@@ -69,16 +69,18 @@ public class CowEvents implements Listener {
 		leaves.get(fatherId).chance = (leaves.get(fatherId).chance - 0.5) * 2;
 		leaves.get(motherId).chance = (leaves.get(motherId).chance - 0.5) * 2;
 		
-		Fraction fraction = new Fraction(0, 0);
+		ArrayList<Double> fraction = new ArrayList<Double>(Arrays.asList(0.0, 0.0));
 		leaves.forEach((key, value) -> {
+			double numer = fraction.get(0);
+			double denomn = fraction.get(1);
 			if(value.repeated){
-				fraction.numer += value.chance;
-				fraction.denom += 1;
+				fraction.set(0, numer += value.chance);
+				fraction.set(1, numer += 1);
 			}
 		});
 		
-		if(fraction.denom != 0){
-			double chance = fraction.numer/fraction.denom;
+		if(fraction.get(1) != 0){
+			double chance = fraction.get(0)/fraction.get(1);
 			if(Math.random() < chance){
 				child.remove();
 				switch(child.getType()){
