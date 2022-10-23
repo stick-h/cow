@@ -72,10 +72,10 @@ public class CowEvents implements Listener {
 		ArrayList<Double> fraction = new ArrayList<Double>(Arrays.asList(0.0, 0.0));
 		leaves.forEach((key, value) -> {
 			double numer = fraction.get(0);
-			double denomn = fraction.get(1);
+			double denom = fraction.get(1);
 			if(value.repeated){
 				fraction.set(0, numer += value.chance);
-				fraction.set(1, numer += 1);
+				fraction.set(1, denom += 1);
 			}
 		});
 		
