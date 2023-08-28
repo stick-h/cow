@@ -100,7 +100,7 @@ public class CowEvents implements Listener {
 
 		double random = Math.random();
 		System.out.println(random);
-		if(random < COI && random != 0.00){
+		if(random < COI){
 			child.remove();
 			switch(child.getType()){
 				case PIG:
@@ -120,8 +120,8 @@ public class CowEvents implements Listener {
 			
 			for(int i = 0; i < Math.max(fatherTree.size(), motherTree.size()); i++){
 				JSONArray jointArray = new JSONArray();
-				if(fatherTree.get(i) != null) jointArray.addAll((JSONArray)fatherTree.get(i));
-				if(motherTree.get(i) != null) jointArray.addAll((JSONArray)motherTree.get(i));
+				if(fatherTree.size() > i) jointArray.addAll((JSONArray)fatherTree.get(i));
+				if(motherTree.size() > i) jointArray.addAll((JSONArray)motherTree.get(i));
 				childTree.add(jointArray);
 			}
 			
