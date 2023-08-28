@@ -1,99 +1,139 @@
 package cow.plug;
 
+import java.io.*;
 import java.util.*;
-import java.io.IOException;
 
 import org.bukkit.*;
 import org.bukkit.event.*;
 import org.bukkit.event.entity.*;
-import org.bukkit.loot.*;
-import org.bukkit.potion.*;
 import org.bukkit.entity.*;
 
+import org.json.simple.*;
+import org.json.simple.parser.*;
+
 public class CowEvents implements Listener {
-	private static Cow main;
-	static Map<String, String[][]> trees;
-	//childID: [parents IDs][grandparents IDs][great grandparents IDs]...
-	
+	private static JSONObject nodes;
+	private static File file;
+
 	public CowEvents(Cow main){
-		CowEvents.main = main;
-		CowEvents.trees = Conversion.yamlToHashMap(main.treeConfig);
+		 this.nodes = main.nodes;
+		 this.file = main.file;
 	}
 	
 	@EventHandler
-	public static void onEntityBreed(EntityBreedEvent evt){
+	public static void onEntityBreed(EntityBreedEvent evt) throws IOException {
+		System.out.println("bred");
 		Ageable child = (Ageable) evt.getEntity();
-		String childId = child.getUniqueId().toString();
-		String fatherId = evt.getFather().getUniqueId().toString();
-		String motherId = evt.getMother().getUniqueId().toString();
+		String childID = child.getUniqueId().toString();
+		String fatherID = evt.getFather().getUniqueId().toString();
+		String motherID = evt.getMother().getUniqueId().toString();
 		Location location = evt.getFather().getLocation();
 		World world = evt.getFather().getWorld();
 		
+		double COI = 0.00;
+		JSONArray fatherTree = null;
+		JSONArray motherTree = null;
+		List<Integer> nums = new ArrayList<Integer>();
+		List<Double> COIs = new ArrayList<Double>();
 		
-		ArrayList<String[]> familyList = new ArrayList<String[]>();
-		familyList.add(new String[]{fatherId, motherId});
-		String[][] fatherBranch = trees.containsKey(fatherId) ? trees.get(fatherId) : new String[0][0];
-		String[][] motherBranch = trees.containsKey(motherId) ? trees.get(motherId) : new String[0][0];
-		
-		for(int i = 0; i < fatherBranch.length || i < motherBranch.length; i++){
-			if(i < fatherBranch.length){
-				if(i >= motherBranch.length) familyList.add(fatherBranch[i]);
-				else{
-					ArrayList<String> list = new ArrayList<String>(Arrays.asList(fatherBranch[i]));
-					list.addAll(Arrays.asList(motherBranch[i]));
-					familyList.add(list.toArray(new String[0]));
-				}
-			}else familyList.add(motherBranch[i]);
-		}
-		
-		String[][] tree = familyList.toArray(new String[0][0]);
-		trees.put(childId, tree);
-		main.treeConfig.set(childId, tree);
-		try{ main.treeConfig.save(main.treeYml); }catch(IOException err){ err.printStackTrace(); }
+		JSONObject fatherObj = (JSONObject)nodes.get(fatherID);
+		JSONObject motherObj = (JSONObject)nodes.get(motherID);
 		
 		
-		Map<String, Leaf> leaves = new HashMap<>();
-		for(int i = 0; i < tree.length; i++){
-			for(int j = 0; j < tree[i].length; j++){
-				String leafId = tree[i][j];
-				double chance = Math.pow(2, -i-1);
-				if(!leaves.containsKey(leafId)) leaves.put(leafId, new Leaf(false, chance));
-				else{
-					Leaf leaf = leaves.get(leafId);
-					leaf.repeated = true;
-					leaf.chance += chance;
+		if(fatherObj == null){
+			JSONArray first = new JSONArray();
+			first.add(fatherID);
+			fatherTree = new JSONArray();
+			fatherTree.add(first);
+			
+			fatherObj = new JSONObject();
+			fatherObj.put("tree", fatherTree);
+			fatherObj.put("COI", 0.00);
+			nodes.put(fatherID, fatherObj);
+			
+			FileWriter filewriter = new FileWriter(file);
+			filewriter.write(nodes.toJSONString());
+			filewriter.close();
+		}else fatherTree = (JSONArray)fatherObj.get("tree");
+		
+		if(motherObj == null){
+			JSONArray first = new JSONArray();
+			first.add(motherID);
+			motherTree = new JSONArray();
+			motherTree.add(first);
+			
+			motherObj = new JSONObject();
+			motherObj.put("tree", motherTree);
+			motherObj.put("COI", 0.00);
+			nodes.put(motherID, motherObj);
+			
+			FileWriter filewriter = new FileWriter(file);
+			filewriter.write(nodes.toJSONString());
+			filewriter.close();
+		}else motherTree = (JSONArray)motherObj.get("tree");
+
+		for(int i = 0; i < fatherTree.size(); i++){
+			
+			for(int j = 0; j < motherTree.size(); j++){
+				JSONArray genF = (JSONArray)fatherTree.get(i);
+				JSONArray genM = (JSONArray)motherTree.get(j);
+				
+				for(int k = 0; k < genF.size(); k++){
+					
+					String entity = (String)genF.get(k);
+					int count = 0;
+					
+					for(int m = 0; m < genM.size(); m++) if(entity == (String)genM.get(m)) count++;
+					
+					for(int n = 0; n < count; n++){
+						nums.add(i+j+1);
+						JSONObject entityObj = (JSONObject)nodes.get(entity);
+						if(entityObj != null) COIs.add((Double)entityObj.get("COI"));
+						else COIs.add(0.00);
+					}
+					
 				}
 			}
 		}
 		
-		leaves.get(fatherId).chance = (leaves.get(fatherId).chance - 0.5) * 2;
-		leaves.get(motherId).chance = (leaves.get(motherId).chance - 0.5) * 2;
-		
-		ArrayList<Double> fraction = new ArrayList<Double>(Arrays.asList(0.0, 0.0));
-		leaves.forEach((key, value) -> {
-			double numer = fraction.get(0);
-			double denom = fraction.get(1);
-			if(value.repeated){
-				fraction.set(0, numer += value.chance);
-				fraction.set(1, denom += 1);
+		for(int i = 0; i < nums.size(); i++) COI += Math.pow(0.5, nums.get(i))*(1+COIs.get(i));
+
+		double random = Math.random();
+		System.out.println(random);
+		if(random < COI && random != 0.00){
+			child.remove();
+			switch(child.getType()){
+				case PIG:
+					Creeper creeper = (Creeper)world.spawnEntity(location, EntityType.CREEPER);
+					creeper.ignite();
+					break;
+				default:
+					LivingEntity ravager = (LivingEntity)world.spawnEntity(location, EntityType.RAVAGER);
+					ravager.setCustomName(child.getType().toString());
+					break;
 			}
-		});
-		
-		if(fraction.get(1) != 0){
-			double chance = fraction.get(0)/fraction.get(1);
-			if(Math.random() < chance){
-				child.remove();
-				switch(child.getType()){
-					case PIG:
-						Creeper creeper = (Creeper) world.spawnEntity(location, EntityType.CREEPER);
-						creeper.ignite();
-						break;
-					default:
-						LivingEntity ravager = (LivingEntity) world.spawnEntity(location, EntityType.RAVAGER);
-						ravager.setCustomName(child.getType().toString());
-						break;
-				}
+		}else{
+			JSONArray childTree = new JSONArray();
+			JSONArray first = new JSONArray();
+			first.add(childID);
+			childTree.add(first);
+			
+			for(int i = 0; i < Math.max(fatherTree.size(), motherTree.size()); i++){
+				JSONArray jointArray = new JSONArray();
+				if(fatherTree.get(i) != null) jointArray.addAll((JSONArray)fatherTree.get(i));
+				if(motherTree.get(i) != null) jointArray.addAll((JSONArray)motherTree.get(i));
+				childTree.add(jointArray);
 			}
+			
+			JSONObject childObj = new JSONObject();
+			childObj.put("tree", childTree);
+			childObj.put("COI", COI);
+			nodes.put(childID, childObj);
+			
+			FileWriter filewriter = new FileWriter(file);
+			filewriter.write(nodes.toJSONString());
+			filewriter.close();
 		}
+		System.out.println(COI);
 	}
 }
